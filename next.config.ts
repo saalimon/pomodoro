@@ -6,9 +6,8 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true
   },
-  // If deploying to a subdirectory, uncomment and set the basePath
-  // basePath: '/your-repo-name',
-  // assetPrefix: '/your-repo-name',
+  basePath: '/pomodoro',
+  assetPrefix: '/pomodoro',
 };
 
 export default nextConfig;
