@@ -131,11 +131,6 @@ export default function PomodoroTimer() {
     setIsRunning(false)
   }
 
-  const handleSettingsUpdate = (newSettings: TimerSettings) => {
-    setSettings(newSettings)
-    setShowSettings(false)
-  }
-
   const addTask = () => {
     if (newTask.trim()) {
       setTasks((prev) => [
