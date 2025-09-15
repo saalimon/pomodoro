@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Settings, Play, Pause, RotateCcw, Plus, Trash2 } from "lucide-react"
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak"
 
@@ -22,6 +23,7 @@ interface TimerSettings {
   pomodoro: number
   shortBreak: number
   longBreak: number
+  soundEnabled: boolean
 }
 
 export default function PomodoroTimer() {
@@ -37,10 +39,31 @@ export default function PomodoroTimer() {
     pomodoro: 25,
     shortBreak: 5,
     longBreak: 15,
+    soundEnabled: true,
   })
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+
+  // Initialize audio context
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+        audioContextRef.current = new AudioContextClass()
+      } catch (error) {
+        console.log('Audio context not supported:', error)
+      }
+    }
+
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close()
+      }
+    }
+  }, [])
 
   // Initialize timer based on current mode
   useEffect(() => {
@@ -63,6 +86,9 @@ export default function PomodoroTimer() {
     // Auto-switch modes when timer reaches 0
     if (timeLeft === 0 && isRunning) {
       setIsRunning(false)
+      if (settings.soundEnabled) {
+        playNotificationSound()
+      }
       if (mode === "pomodoro") {
         setCompletedPomodoros((prev) => prev + 1)
         // Switch to long break after 4 pomodoros, otherwise short break
@@ -78,7 +104,7 @@ export default function PomodoroTimer() {
         clearInterval(intervalRef.current)
       }
     }
-  }, [isRunning, timeLeft, mode, completedPomodoros])
+  }, [isRunning, timeLeft, mode, completedPomodoros, settings.soundEnabled])
 
   // Wake lock management effect
   useEffect(() => {
@@ -163,6 +189,36 @@ export default function PomodoroTimer() {
         return "Long Break"
     }
   }
+  const getLottieForMode = (mode: TimerMode) => {
+    switch (mode) {
+      case "pomodoro":
+        return "/walking-taco.lottie"
+      case "shortBreak":
+        return "/shocked-duck.lottie"
+      case "longBreak":
+        return "/inhale-exhale.lottie"
+    }
+  }
+
+  const playNotificationSound = async () => {
+    try {
+      if (!audioContextRef.current) return
+
+      // Resume audio context if it's suspended (required by modern browsers)
+      if (audioContextRef.current.state === 'suspended') {
+        await audioContextRef.current.resume()
+      }
+
+      // Play jobs_done.mp3 from public folder
+      const audio = new window.Audio('/jobs_done.mp3')
+      audio.volume = 0.7
+      audio.play().catch((err) => {
+        console.log("Could not play notification sound:", err)
+      })
+    } catch (error) {
+      console.log("Could not play notification sound:", error)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -183,6 +239,16 @@ export default function PomodoroTimer() {
               <Button variant="ghost" size="sm" onClick={() => setShowSettings(!showSettings)}>
                 <Settings className="h-4 w-4" />
               </Button>
+            </div>
+            <div className="flex justify-center">
+              <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32">
+              <DotLottieReact
+                src={getLottieForMode(mode)}
+                loop
+                autoplay
+                style={{ width: "100%", height: "100%" }}
+              />
+              </div>
             </div>
             <CardTitle className="text-2xl">{getModeLabel(mode)}</CardTitle>
           </CardHeader>
@@ -239,55 +305,75 @@ export default function PomodoroTimer() {
             {/* Settings Panel */}
             {showSettings && (
               <div className="border rounded-lg p-4 space-y-4 bg-muted/50">
-                <h3 className="font-semibold">Timer Settings (minutes)</h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="pomodoro">Pomodoro</Label>
-                    <Input
-                      id="pomodoro"
-                      type="number"
-                      min="1"
-                      max="60"
-                      value={settings.pomodoro}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          pomodoro: Number.parseInt(e.target.value) || 25,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="shortBreak">Short Break</Label>
-                    <Input
-                      id="shortBreak"
-                      type="number"
-                      min="1"
-                      max="30"
-                      value={settings.shortBreak}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          shortBreak: Number.parseInt(e.target.value) || 5,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="longBreak">Long Break</Label>
-                    <Input
-                      id="longBreak"
-                      type="number"
-                      min="1"
-                      max="60"
-                      value={settings.longBreak}
-                      onChange={(e) =>
-                        setSettings((prev) => ({
-                          ...prev,
-                          longBreak: Number.parseInt(e.target.value) || 15,
-                        }))
-                      }
-                    />
+                <h3 className="font-semibold">Timer Settings</h3>
+
+                {/* Sound Toggle */}
+                <div className="flex items-center space-x-3">
+                  <Checkbox
+                    id="soundEnabled"
+                    checked={settings.soundEnabled}
+                    onCheckedChange={(checked) =>
+                      setSettings((prev) => ({
+                        ...prev,
+                        soundEnabled: checked as boolean,
+                      }))
+                    }
+                  />
+                  <Label htmlFor="soundEnabled">Sound notifications</Label>
+                </div>
+
+                {/* Timer Duration Settings */}
+                <div>
+                  <h4 className="font-medium mb-3">Timer Durations (minutes)</h4>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="pomodoro">Pomodoro</Label>
+                      <Input
+                        id="pomodoro"
+                        type="number"
+                        min="1"
+                        max="60"
+                        value={settings.pomodoro}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            pomodoro: Number.parseInt(e.target.value) || 25,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="shortBreak">Short Break</Label>
+                      <Input
+                        id="shortBreak"
+                        type="number"
+                        min="1"
+                        max="30"
+                        value={settings.shortBreak}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            shortBreak: Number.parseInt(e.target.value) || 5,
+                          }))
+                        }
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="longBreak">Long Break</Label>
+                      <Input
+                        id="longBreak"
+                        type="number"
+                        min="1"
+                        max="60"
+                        value={settings.longBreak}
+                        onChange={(e) =>
+                          setSettings((prev) => ({
+                            ...prev,
+                            longBreak: Number.parseInt(e.target.value) || 15,
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
