@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -9,7 +10,12 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Settings, Play, Pause, RotateCcw, Plus, Trash2 } from "lucide-react"
-import { DotLottieReact } from '@lottiefiles/dotlottie-react';
+
+// Dynamic import for DotLottieReact with SSR disabled
+const DotLottieReact = dynamic(
+  () => import("@lottiefiles/dotlottie-react").then(mod => mod.DotLottieReact),
+  { ssr: false }
+)
 
 type TimerMode = "pomodoro" | "shortBreak" | "longBreak"
 
@@ -242,12 +248,16 @@ export default function PomodoroTimer() {
             </div>
             <div className="flex justify-center">
               <div className="w-20 h-20 sm:w-28 sm:h-28 md:w-32 md:h-32">
-              <DotLottieReact
-                src={getLottieForMode(mode)}
-                loop
-                autoplay
-                style={{ width: "100%", height: "100%" }}
-              />
+                {typeof window !== 'undefined' ? (
+                  <DotLottieReact
+                    src={getLottieForMode(mode)}
+                    loop
+                    autoplay
+                    style={{ width: "100%", height: "100%" }}
+                  />
+                ) : (
+                  <div className="w-full h-full bg-muted rounded-lg animate-pulse" />
+                )}
               </div>
             </div>
             <CardTitle className="text-2xl">{getModeLabel(mode)}</CardTitle>
