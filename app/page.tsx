@@ -198,11 +198,11 @@ export default function PomodoroTimer() {
   const getLottieForMode = (mode: TimerMode) => {
     switch (mode) {
       case "pomodoro":
-        return "/walking-taco.lottie"
+        return "https://lottie.host/52fe4647-d2e7-4b7c-a9d6-4ef7c2973584/XMx22NnYlJ.lottie"
       case "shortBreak":
-        return "/shocked-duck.lottie"
+        return "https://lottie.host/8f89412a-f313-4098-a452-0b7a731d8cd3/YcGOvmR48x.lottie"
       case "longBreak":
-        return "/inhale-exhale.lottie"
+        return "https://lottie.host/a2fcc870-3618-4721-af7b-040f151c2a61/zd68ylLQUP.lottie"
     }
   }
 
