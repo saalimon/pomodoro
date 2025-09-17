@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Settings, Play, Pause, RotateCcw, Plus, Trash2 } from "lucide-react"
+import type { DotLottie } from "@lottiefiles/dotlottie-react"
 
 // Dynamic import for DotLottieReact with SSR disabled
 const DotLottieReact = dynamic(
@@ -51,9 +52,7 @@ export default function PomodoroTimer() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
-  // Import type for DotLottie if available, otherwise use 'any'
-  // import type { DotLottie } from "@lottiefiles/dotlottie-react"
-  const dotLottieRef = useRef<any | null>(null)
+  const dotLottieRef = useRef<DotLottie | null>(null)
 
   // Initialize audio context
   useEffect(() => {
@@ -209,13 +208,14 @@ export default function PomodoroTimer() {
     }
   }
   const getLottieForMode = (mode: TimerMode) => {
+    const basePath = typeof window !== 'undefined' && window.location.pathname.startsWith('/pomodoro') ? '/pomodoro' : ''
     switch (mode) {
       case "pomodoro":
-        return "/walking-taco.json"
+        return `${basePath}/walking-taco.json`
       case "shortBreak":
-        return "/shocked-duck.json"
+        return `${basePath}/shocked-duck.json`
       case "longBreak":
-        return "/inhale-exhale.json"
+        return `${basePath}/inhale-exhale.json`
     }
   }
 
