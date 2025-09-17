@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, use } from "react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -51,6 +51,9 @@ export default function PomodoroTimer() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null)
   const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const audioContextRef = useRef<AudioContext | null>(null)
+  // Import type for DotLottie if available, otherwise use 'any'
+  // import type { DotLottie } from "@lottiefiles/dotlottie-react"
+  const dotLottieRef = useRef<any | null>(null)
 
   // Initialize audio context
   useEffect(() => {
@@ -111,7 +114,16 @@ export default function PomodoroTimer() {
       }
     }
   }, [isRunning, timeLeft, mode, completedPomodoros, settings.soundEnabled])
-
+  // DotLottie play/stop effect
+  useEffect(() => {
+    if (dotLottieRef.current) {
+      if (isRunning) {
+        dotLottieRef.current.play()
+      } else {
+        dotLottieRef.current.pause()
+      }
+    }
+  }, [isRunning])
   // Wake lock management effect
   useEffect(() => {
     const requestWakeLock = async () => {
@@ -154,6 +166,7 @@ export default function PomodoroTimer() {
   const handleStart = () => setIsRunning(true)
   const handlePause = () => setIsRunning(false)
   const handleReset = () => {
+    dotLottieRef.current?.stop()
     setIsRunning(false)
     setTimeLeft(settings[mode] * 60)
   }
@@ -198,11 +211,11 @@ export default function PomodoroTimer() {
   const getLottieForMode = (mode: TimerMode) => {
     switch (mode) {
       case "pomodoro":
-        return "https://lottie.host/52fe4647-d2e7-4b7c-a9d6-4ef7c2973584/XMx22NnYlJ.lottie"
+        return "/walking-taco.json"
       case "shortBreak":
-        return "https://lottie.host/8f89412a-f313-4098-a452-0b7a731d8cd3/YcGOvmR48x.lottie"
+        return "/shocked-duck.json"
       case "longBreak":
-        return "https://lottie.host/a2fcc870-3618-4721-af7b-040f151c2a61/zd68ylLQUP.lottie"
+        return "/inhale-exhale.json"
     }
   }
 
@@ -215,8 +228,11 @@ export default function PomodoroTimer() {
         await audioContextRef.current.resume()
       }
 
-      // Play jobs_done.mp3 from public folder
-      const audio = new window.Audio('/jobs_done.mp3')
+      // Check if we're in production and if basePath is being used
+      const basePath = typeof window !== 'undefined' && window.location.pathname.startsWith('/pomodoro') ? '/pomodoro' : ''
+      
+      // Play jobs_done.mp3 from public folder with correct path
+      const audio = new window.Audio(`${basePath}/jobs_done.mp3`)
       audio.volume = 0.7
       audio.play().catch((err) => {
         console.log("Could not play notification sound:", err)
@@ -252,8 +268,9 @@ export default function PomodoroTimer() {
                   <DotLottieReact
                     src={getLottieForMode(mode)}
                     loop
-                    autoplay
+                    autoplay={false}
                     style={{ width: "100%", height: "100%" }}
+                    dotLottieRefCallback={(dotLottie) => { dotLottieRef.current = dotLottie; }}
                   />
                 ) : (
                   <div className="w-full h-full bg-muted rounded-lg animate-pulse" />
